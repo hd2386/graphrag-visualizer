@@ -780,7 +780,6 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           nodeAutoColorBy="type"
           nodeRelSize={NODE_R}
           nodeVal={(node) => getNodeSize(node as CustomNode)}
-          autoPauseRedraw={false}
           linkWidth={(link) =>
             showHighlight && highlightLinks.has(link) ? 5 : 1
           }
