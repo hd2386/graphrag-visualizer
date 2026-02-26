@@ -783,10 +783,10 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
           linkWidth={(link) =>
             showHighlight && highlightLinks.has(link) ? 5 : 1
           }
-          linkDirectionalParticles={showHighlight ? 4 : 0}
-          linkDirectionalParticleWidth={(link) =>
+          linkDirectionalParticles={(link) =>
             showHighlight && highlightLinks.has(link) ? 4 : 0
           }
+          linkDirectionalParticleWidth={4}
           linkDirectionalParticleColor={
             showHighlight ? getlinkDirectionalParticleColor : undefined
           }

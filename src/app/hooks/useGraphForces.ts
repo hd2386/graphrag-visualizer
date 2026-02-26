@@ -18,10 +18,10 @@ export function useGraphForces(
       "collide",
       forceCollide((node: any) => {
         const size = getNodeSize(node as CustomNode);
-        return Math.sqrt(size) * NODE_R + 4;
+        return Math.sqrt(size) * NODE_R + 8;
       }),
     );
-    graphRef.current.d3Force("charge")?.strength(-150);
+    graphRef.current.d3Force("charge")?.strength(-100);
 
     if (initialized.current) {
       graphRef.current.d3ReheatSimulation();
