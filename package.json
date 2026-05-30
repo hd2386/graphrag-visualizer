@@ -41,7 +41,8 @@
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "doctor": "npx react-doctor@latest"
   },
   "eslintConfig": {
     "extends": [
@@ -65,6 +66,7 @@
     "@types/d3-force": "^3.0.10",
     "@types/react-table": "^7.7.20",
     "@types/three": "^0.167.1",
-    "gh-pages": "^6.1.1"
+    "gh-pages": "^6.1.1",
+    "react-doctor": "^0.2.14"
   }
 }
