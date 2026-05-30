@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -57,9 +57,7 @@ const APISearchDrawer: React.FC<APISearchDrawerProps> = ({
     [key: string]: boolean;
   }>({});
 
-  const prevSearchResultsRef = useRef<SearchResult | null>(null);
-  if (apiSearchResults !== prevSearchResultsRef.current) {
-    prevSearchResultsRef.current = apiSearchResults;
+  useEffect(() => {
     setExpandedTables(
       apiSearchResults?.context_data
         ? Object.fromEntries(
@@ -67,7 +65,7 @@ const APISearchDrawer: React.FC<APISearchDrawerProps> = ({
           )
         : {},
     );
-  }
+  }, [apiSearchResults]);
 
   const handleSearch = async (searchType: "local" | "global") => {
     if (searchType === "local") {

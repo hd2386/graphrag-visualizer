@@ -158,13 +158,12 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     initialGraphData.current = sanitizedBaseData;
   }
 
-  const displayGraphData = useMemo(
-    () =>
-      sanitizeGraphData(
-        apiSearchResults && searchGraphData ? searchGraphData : data,
-      ),
-    [apiSearchResults, searchGraphData, data],
-  );
+  const displayGraphData = useMemo(() => {
+    if (apiSearchResults && searchGraphData) {
+      return searchGraphData;
+    }
+    return sanitizeGraphData(data);
+  }, [apiSearchResults, searchGraphData, data]);
 
   const graphRenderKey = useMemo(
     () =>
@@ -172,13 +171,11 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     [maxEntities, displayGraphData.nodes.length, displayGraphData.links.length],
   );
 
-  const highlightKeyRef = useRef(graphRenderKey);
-  if (highlightKeyRef.current !== graphRenderKey) {
-    highlightKeyRef.current = graphRenderKey;
+  useEffect(() => {
     setHighlightNodes(new Set());
     setHighlightLinks(new Set());
     setHoverNode(null);
-  }
+  }, [graphRenderKey]);
 
   const getNodeSize = useCallback((node: CustomNode) => {
     const type = node.type;

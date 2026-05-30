@@ -45,18 +45,22 @@ function buildGraphData(
       .slice(0, maxEntities);
   }
 
-  const nodes: CustomNode[] = filteredEntities.map((entity) => ({
-    uuid: entity.id,
-    id: entity.title,
-    name: entity.title,
-    title: entity.title,
-    type: entity.type,
-    description: entity.description,
-    human_readable_id: entity.human_readable_id,
-    text_unit_ids: entity.text_unit_ids,
-    neighbors: [],
-    links: [],
-  }));
+  const entityTitleByUuid = new Map<string, string>();
+  const nodes: CustomNode[] = filteredEntities.map((entity) => {
+    entityTitleByUuid.set(entity.id, entity.title);
+    return {
+      uuid: entity.id,
+      id: entity.title,
+      name: entity.title,
+      title: entity.title,
+      type: entity.type,
+      description: entity.description,
+      human_readable_id: entity.human_readable_id,
+      text_unit_ids: entity.text_unit_ids,
+      neighbors: [],
+      links: [],
+    };
+  });
 
   const nodesMap: { [key: string]: CustomNode } = {};
   nodes.forEach((node) => (nodesMap[node.id] = node));
@@ -133,7 +137,7 @@ function buildGraphData(
     for (const textunit of textunits) {
       if ((textunit.entity_ids ?? []).length === 0) continue;
       for (const entityId of textunit.entity_ids) {
-        const targetName = nodes.find((e) => e.uuid === entityId)?.name;
+        const targetName = entityTitleByUuid.get(entityId);
         if (!targetName) continue;
         links.push({
           source: textunit.id,

@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { forceCollide } from "d3-force";
 import { CustomGraphData, CustomNode } from "../models/custom-graph-data";
 
 const NODE_R = 8;
 
 export function useGraphForces(
-  graphRef: React.MutableRefObject<any>,
+  graphRef: MutableRefObject<any>,
   getNodeSize: (node: CustomNode) => number,
   graphData: CustomGraphData,
 ) {
