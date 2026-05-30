@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+} from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import ForceGraph3D from "react-force-graph-3d";
 import {
@@ -37,6 +43,7 @@ import agent from "../api/agent";
 import APISearchDrawer from "./APISearchDrawer";
 import SpriteText from "three-spritetext";
 import { useGraphForces } from "../hooks/useGraphForces";
+import { sanitizeGraphData } from "../utils/sanitizeGraphData";
 
 type Coords = {
   x: number;
@@ -92,6 +99,18 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   totalEntities,
 }) => {
   const theme = useTheme();
+  const sliderMax = Math.max(totalEntities, 1000);
+  const sliderMin = 50;
+  const toSliderValue = (value: number) =>
+    value === 0 ? sliderMax : Math.min(value, sliderMax);
+  const fromSliderValue = (value: number) => (value >= sliderMax ? 0 : value);
+  const committedSliderValue = toSliderValue(maxEntities);
+  const [isSliderDragging, setIsSliderDragging] = useState(false);
+  const [dragSliderValue, setDragSliderValue] = useState<number | null>(null);
+  const sliderValue =
+    isSliderDragging && dragSliderValue !== null
+      ? dragSliderValue
+      : committedSliderValue;
   const [highlightNodes, setHighlightNodes] = useState<Set<CustomNode>>(
     new Set(),
   );
@@ -126,14 +145,40 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   );
   const [serverUp, setServerUp] = useState<boolean>(false);
 
-  const [graphData, setGraphData] = useState<CustomGraphData>(data);
+  const [searchGraphData, setSearchGraphData] = useState<CustomGraphData | null>(
+    null,
+  );
 
-  const initialGraphData = useRef<CustomGraphData>(data);
+  const sanitizedBaseData = useMemo(() => sanitizeGraphData(data), [data]);
+  const initialGraphData = useRef<CustomGraphData>(sanitizedBaseData);
+  const prevBaseDataRef = useRef(data);
 
-  useEffect(() => {
-    setGraphData(data);
-    initialGraphData.current = data;
-  }, [data]);
+  if (prevBaseDataRef.current !== data) {
+    prevBaseDataRef.current = data;
+    initialGraphData.current = sanitizedBaseData;
+  }
+
+  const displayGraphData = useMemo(
+    () =>
+      sanitizeGraphData(
+        apiSearchResults && searchGraphData ? searchGraphData : data,
+      ),
+    [apiSearchResults, searchGraphData, data],
+  );
+
+  const graphRenderKey = useMemo(
+    () =>
+      `${maxEntities}-${displayGraphData.nodes.length}-${displayGraphData.links.length}`,
+    [maxEntities, displayGraphData.nodes.length, displayGraphData.links.length],
+  );
+
+  const highlightKeyRef = useRef(graphRenderKey);
+  if (highlightKeyRef.current !== graphRenderKey) {
+    highlightKeyRef.current = graphRenderKey;
+    setHighlightNodes(new Set());
+    setHighlightLinks(new Set());
+    setHoverNode(null);
+  }
 
   const getNodeSize = useCallback((node: CustomNode) => {
     const type = node.type;
@@ -156,7 +201,7 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     checkServerStatus();
   }, []);
 
-  useGraphForces(graphRef, getNodeSize, graphData);
+  useGraphForces(graphRef, getNodeSize, displayGraphData);
 
   const toggleApiDrawer = (open: boolean) => () => {
     setApiDrawerOpen(open);
@@ -254,13 +299,13 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     });
 
     // Update the graph data with the new nodes and links
-    const updatedGraphData: CustomGraphData = {
+    const updatedGraphData: CustomGraphData = sanitizeGraphData({
       nodes: [...newNodes],
       links: [...newLinks],
-    };
+    });
 
     // Set the updated data to trigger re-render
-    setGraphData(updatedGraphData);
+    setSearchGraphData(updatedGraphData);
   };
 
   const fuse = new Fuse([...data.nodes, ...data.links], {
@@ -555,8 +600,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
     : includeTextUnits && includeCommunities;
 
   const clearSearchResults = () => {
-    setGraphData(initialGraphData.current);
     setApiSearchResults(null);
+    setSearchGraphData(null);
   };
 
   return (
@@ -753,17 +798,25 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
               {totalEntities > 0 && ` / ${totalEntities}`}
             </Typography>
             <Slider
-              value={maxEntities}
-              onChange={(_, value) => onMaxEntitiesChange(value as number)}
-              min={0}
-              max={Math.max(totalEntities, 1000)}
+              value={sliderValue}
+              onChange={(_, value) => {
+                setIsSliderDragging(true);
+                setDragSliderValue(value as number);
+              }}
+              onChangeCommitted={(_, value) => {
+                setIsSliderDragging(false);
+                setDragSliderValue(null);
+                onMaxEntitiesChange(fromSliderValue(value as number));
+              }}
+              min={sliderMin}
+              max={sliderMax}
               step={50}
               marks={[
-                { value: 0, label: "All" },
-                { value: 500, label: "500" },
+                { value: sliderMin, label: String(sliderMin) },
+                { value: sliderMax, label: "All" },
               ]}
               valueLabelDisplay="auto"
-              valueLabelFormat={(value) => (value === 0 ? "All" : value)}
+              valueLabelFormat={(value) => (value >= sliderMax ? "All" : value)}
               disabled={apiSearchResults !== null}
             />
           </Box>
@@ -805,8 +858,9 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
 
       {graphType === "2d" ? (
         <ForceGraph2D
+          key={graphRenderKey}
           ref={graphRef}
-          graphData={graphData}
+          graphData={displayGraphData}
           nodeAutoColorBy="type"
           nodeRelSize={NODE_R}
           nodeVal={(node) => getNodeSize(node as CustomNode)}
@@ -876,9 +930,10 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
         />
       ) : (
         <ForceGraph3D
+          key={graphRenderKey}
           ref={graphRef}
           extraRenderers={extraRenderers}
-          graphData={graphData}
+          graphData={displayGraphData}
           nodeAutoColorBy="type"
           nodeRelSize={NODE_R}
           nodeVal={(node) => getNodeSize(node as CustomNode)}
