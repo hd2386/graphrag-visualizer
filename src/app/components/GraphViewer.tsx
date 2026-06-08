@@ -145,9 +145,8 @@ const GraphViewer: React.FC<GraphViewerProps> = ({
   );
   const [serverUp, setServerUp] = useState<boolean>(false);
 
-  const [searchGraphData, setSearchGraphData] = useState<CustomGraphData | null>(
-    null,
-  );
+  const [searchGraphData, setSearchGraphData] =
+    useState<CustomGraphData | null>(null);
 
   const sanitizedBaseData = useMemo(() => sanitizeGraphData(data), [data]);
   const initialGraphData = useRef<CustomGraphData>(sanitizedBaseData);
